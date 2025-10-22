@@ -3,7 +3,6 @@ name = "dbc-data"
 version = "0.1.8"
 edition = "2021"
 authors = ["Michael Fairman <mfairman@tegimeki.com>"]
-readme = "README.md"
 description = "Derive macro for CAN DBC code generation"
 repository = "https://github.com/oxibus/dbc-data"
 keywords = ["can", "automotive", "ecu", "no-std"]
@@ -15,7 +14,7 @@ rust-version = "1.79"
 proc-macro = true
 
 [dependencies]
-can-dbc = "6.0.0"
+can-dbc = "7.0.0"
 proc-macro2 = "1.0"
 quote = "1.0"
 syn = { version = "2.0", features = ["full", "extra-traits"] }

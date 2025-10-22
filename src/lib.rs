@@ -46,7 +46,7 @@
 //! # Code Generation
 //! This crate is aimed at embedded systems where typically some
 //! subset of the messages and signals defined in the `.dbc` file are
-//! of interest, and the rest can be ignored for a minimal footpint.
+//! of interest, and the rest can be ignored for a minimal footprint.
 //! If you need to decode the entire DBC into rich (possibly
 //! `std`-dependent) types to run on a host system, there are other
 //! crates for that such as `dbc_codegen`.
@@ -76,7 +76,7 @@
 //!
 //! # Usage
 //! As DBC message names tend to follow different conventions from Rust
-//! code, it can be helpful to wrap them in newtype declarations.
+//! code, it can be helpful to wrap them in new type declarations.
 //! Additionally, it is often desirable to scope these identifiers away
 //! from application code by using a private module:
 //!
@@ -122,11 +122,10 @@ mod derive;
 mod message;
 mod signal;
 
-use proc_macro2::TokenStream;
-use syn::{parse_macro_input, Attribute, DeriveInput, Expr, Lit, Meta, Result};
-
 use derive::DeriveData;
 use message::MessageInfo;
+use proc_macro2::TokenStream;
+use syn::{parse_macro_input, Attribute, DeriveInput, Expr, Lit, Meta, Result};
 
 /// See the crate documentation for details.
 ///

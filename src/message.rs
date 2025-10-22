@@ -1,8 +1,9 @@
 //! DBC Message information
 
-use crate::parse_attr;
-use can_dbc::{AttributeValuedForObjectType, MessageId, DBC};
+use can_dbc::{AttributeValuedForObjectType, Dbc, MessageId};
 use syn::{Attribute, Field, Ident, Type, Variant};
+
+use crate::parse_attr;
 
 pub struct MessageInfo<'a> {
     pub id: u32,
@@ -14,11 +15,11 @@ pub struct MessageInfo<'a> {
 }
 
 impl<'a> MessageInfo<'a> {
-    pub fn from_enum_variant(dbc: &DBC, variant: &'a Variant) -> Option<Self> {
+    pub fn from_enum_variant(dbc: &Dbc, variant: &'a Variant) -> Option<Self> {
         Self::new(dbc, &variant.ident, &variant.attrs)
     }
 
-    pub fn from_struct_field(dbc: &DBC, field: &'a Field) -> Option<Self> {
+    pub fn from_struct_field(dbc: &Dbc, field: &'a Field) -> Option<Self> {
         let stype = match &field.ty {
             Type::Path(v) => v,
             Type::Array(a) => match *a.elem {
@@ -30,12 +31,12 @@ impl<'a> MessageInfo<'a> {
         Self::new(dbc, &stype.path.segments[0].ident, &field.attrs)
     }
 
-    fn new(dbc: &DBC, ident: &'a Ident, attrs: &[Attribute]) -> Option<Self> {
+    fn new(dbc: &Dbc, ident: &'a Ident, attrs: &[Attribute]) -> Option<Self> {
         let name = ident.to_string();
 
         for (index, message) in dbc.messages().iter().enumerate() {
-            if message.message_name() == &name {
-                let id = message.message_id();
+            if message.name() == &name {
+                let id = message.id();
                 let (id32, extended) = match *id {
                     MessageId::Standard(id) => (u32::from(id), false),
                     MessageId::Extended(id) => (id, true),
@@ -78,22 +79,26 @@ impl<'a> MessageInfo<'a> {
     fn attr_value(v: &can_dbc::AttributeValue) -> usize {
         use can_dbc::AttributeValue as AV;
         match v {
-            AV::AttributeValueU64(x) => *x as usize,
-            AV::AttributeValueI64(x) => *x as usize,
-            AV::AttributeValueF64(x) => *x as usize,
-            AV::AttributeValueCharString(_) => 0usize, // TODO: parse as int?
+            AV::U64(x) => *x as usize,
+            AV::I64(x) => *x as usize,
+            AV::Double(x) => *x as usize,
+            AV::String(_) => 0usize, // TODO: parse as int?
         }
     }
 
     fn message_attr_value(
-        dbc: &DBC,
+        dbc: &Dbc,
         id: MessageId,
         name: &str,
     ) -> Option<usize> {
         for attr in dbc.attribute_values() {
-            let value = attr.attribute_value();
-            if let AttributeValuedForObjectType::MessageDefinitionAttributeValue(aid, Some(av)) = value {
-                if aid == &id && attr.attribute_name() == name {
+            let value = attr.value();
+            if let AttributeValuedForObjectType::MessageDefinition(
+                aid,
+                Some(av),
+            ) = value
+            {
+                if aid == &id && attr.name() == name {
                     return Some(Self::attr_value(av));
                 }
             }

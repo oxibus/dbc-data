@@ -1,12 +1,17 @@
 //! Main derive macro logic
 
-use crate::{parse_attr, signal::SignalInfo, MessageInfo};
-use can_dbc::{ByteOrder, DBC};
+use std::collections::BTreeMap;
+use std::fmt::Write;
+use std::fs::read_to_string;
+
+use can_dbc::{ByteOrder, Dbc};
 use proc_macro2::TokenStream;
 use quote::{quote, TokenStreamExt};
-use std::fmt::Write;
-use std::{collections::BTreeMap, fs::read};
-use syn::{spanned::Spanned, Data, DeriveInput, Fields, Ident, Result};
+use syn::spanned::Spanned;
+use syn::{Data, DeriveInput, Fields, Ident, Result};
+
+use crate::signal::SignalInfo;
+use crate::{parse_attr, MessageInfo};
 
 /// Data used for codegen
 pub(crate) struct DeriveData<'a> {
@@ -14,8 +19,8 @@ pub(crate) struct DeriveData<'a> {
     #[allow(dead_code)]
     name: &'a Ident,
     /// The parsed DBC file
-    dbc: DBC,
-    /// All of the messages to derive
+    dbc: Dbc,
+    /// All the messages to derive
     messages: BTreeMap<String, MessageInfo<'a>>,
 }
 
@@ -24,9 +29,9 @@ impl<'a> DeriveData<'a> {
         // load the DBC file
         let dbc_file = parse_attr(&input.attrs, "dbc_file")
             .expect("Missing #[dbc_file = <filename>] attribute");
-        let contents = read(&dbc_file)
+        let contents = read_to_string(&dbc_file)
             .unwrap_or_else(|_| panic!("Could not read {dbc_file}"));
-        let dbc = match DBC::from_slice(&contents) {
+        let dbc = match Dbc::try_from(contents.as_str()) {
             Ok(dbc) => dbc,
             Err(can_dbc::Error::Incomplete(dbc, _)) => {
                 // TODO: emit an actual compiler warning
@@ -40,7 +45,7 @@ impl<'a> DeriveData<'a> {
             }
         };
 
-        // gather all of the messages and associated attributes
+        // gather all the messages and associated attributes
         let mut messages: BTreeMap<String, MessageInfo<'_>> =
             BTreeMap::default();
         match &input.data {
@@ -124,27 +129,26 @@ impl<'a> DeriveData<'a> {
                 };
                 let mut doc = format!(
                     "Wire format: {} bit{} starting at bit {}{} ({})\n",
-                    s.signal_size(),
-                    if s.signal_size() == &1 { "" } else { "s" },
+                    s.size(),
+                    if s.size() == &1 { "" } else { "s" },
                     s.start_bit(),
                     scale_string,
                     endian_string,
                 );
 
                 // value-table constants
-                if let Some(descs) = self
-                    .dbc
-                    .value_descriptions_for_signal(*m.message_id(), s.name())
+                if let Some(descriptions) =
+                    self.dbc.value_descriptions_for_signal(*m.id(), s.name())
                 {
-                    for desc in descs {
-                        let santized: String =
-                            format!("{}_{}", s.name(), desc.b())
+                    for desc in descriptions {
+                        let sanitized: String =
+                            format!("{}_{}", s.name(), desc.description())
                                 .to_uppercase()
                                 .chars()
                                 .filter(|c| c.is_alphanumeric() || c == &'_')
                                 .collect();
-                        let c = Ident::new(&santized, signal.ident.span());
-                        let i = signal.const_ident(*desc.a());
+                        let c = Ident::new(&sanitized, signal.ident.span());
+                        let i = signal.const_ident(*desc.id());
                         let v = quote! {#i};
                         let t = signal.ntype.clone();
                         values.extend(quote! {
@@ -161,7 +165,7 @@ impl<'a> DeriveData<'a> {
             let id = message.id;
             let extended = message.extended;
 
-            let dlc = *m.message_size() as usize;
+            let dlc = *m.size() as usize;
             let dlc8 = dlc as u8;
             let ident = message.ident;
 
