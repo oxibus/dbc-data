@@ -61,7 +61,7 @@ See the test cases in this crate for examples of usage.
 
 This crate is aimed at embedded systems where typically some
 subset of the messages and signals defined in the `.dbc` file are
-of interest, and the rest can be ignored for a minimal footpint.
+of interest, and the rest can be ignored for a minimal footprint.
 If you need to decode the entire DBC into rich (possibly
 `std`-dependent) types to run on a host system, there are other
 crates for that such as `dbc_codegen`.
@@ -95,7 +95,7 @@ signals will be stored in a `u32`.
 ## Usage
 
 As DBC message names tend to follow different conventions from Rust
-code, it can be helpful to wrap them in newtype declarations.
+code, it can be helpful to wrap them in `newtype` declarations.
 Additionally, it is often desirable to scope these identifiers away
 from application code by using a private module:
 

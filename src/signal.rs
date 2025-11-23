@@ -199,8 +199,16 @@ impl<'a> SignalInfo<'a> {
             }
         }
 
-        // perform sign-extension for values with fewer bits than
-        // the storage type
+        self.extend_sign(utype, &mut ts);
+
+        ts.append_all(quote! { v });
+
+        quote! { { #ts } }
+    }
+
+    // perform sign-extension for values with fewer bits than
+    // the storage type
+    fn extend_sign(&self, utype: &Ident, ts: &mut TokenStream) {
         if self.signed && self.width < self.nwidth {
             let mask = self.width - 1;
             ts.append_all(quote! {
@@ -213,9 +221,6 @@ impl<'a> SignalInfo<'a> {
                 };
             });
         }
-        ts.append_all(quote! { v });
-
-        quote! { { #ts } }
     }
 
     fn extract_unaligned_be(&self) -> TokenStream {
@@ -279,20 +284,8 @@ impl<'a> SignalInfo<'a> {
             }
         }
 
-        // perform sign-extension for values with fewer bits than
-        // the storage type
-        if self.signed && self.width < self.nwidth {
-            let mask = self.width - 1;
-            ts.append_all(quote! {
-                let mask: #utype = (1 << #mask);
-                let v = if (v & mask) != 0 {
-                    let mask = mask | (mask - 1);
-                    v | !mask
-                } else {
-                    v
-                };
-            });
-        }
+        self.extend_sign(utype, &mut ts);
+
         ts.append_all(quote! { v });
 
         quote! { { #ts } }
