@@ -1,22 +1,30 @@
 //! Main derive macro logic
 
-use crate::{parse_attr, signal::SignalInfo, MessageInfo};
-use can_dbc::{ByteOrder, DBC};
-use proc_macro2::TokenStream;
-use quote::{quote, TokenStreamExt};
+use std::collections::BTreeMap;
 use std::fmt::Write;
-use std::{collections::BTreeMap, fs::read};
-use syn::{spanned::Spanned, Data, DeriveInput, Fields, Ident, Result};
+use std::fs::read;
+
+use can_dbc::{ByteOrder, Dbc};
+use proc_macro2::TokenStream;
+use quote::{TokenStreamExt, quote};
+use syn::spanned::Spanned;
+use syn::{Data, DeriveInput, Fields, Ident, Path, Result};
+
+use crate::signal::SignalInfo;
+use crate::{MessageInfo, parse_attr};
 
 /// Data used for codegen
 pub(crate) struct DeriveData<'a> {
     /// Name of the struct we are deriving for
     #[allow(dead_code)]
     name: &'a Ident,
-    /// The parsed DBC file
-    dbc: DBC,
+    /// The parsed .dbc file
+    dbc: Dbc,
     /// All of the messages to derive
     messages: BTreeMap<String, MessageInfo<'a>>,
+    /// Additional #[derive(...)] for generated messages, defaults
+    /// to `Default`
+    derives: Vec<Path>,
 }
 
 impl<'a> DeriveData<'a> {
@@ -26,19 +34,24 @@ impl<'a> DeriveData<'a> {
             .expect("Missing #[dbc_file = <filename>] attribute");
         let contents = read(&dbc_file)
             .unwrap_or_else(|_| panic!("Could not read {dbc_file}"));
-        let dbc = match DBC::from_slice(&contents) {
+        let contents = str::from_utf8(&contents)
+            .unwrap_or_else(|_| panic!("Could not read {dbc_file}"));
+
+        let dbc = match Dbc::try_from(contents) {
             Ok(dbc) => dbc,
-            Err(can_dbc::Error::Incomplete(dbc, _)) => {
-                // TODO: emit an actual compiler warning
-                eprintln!(
-                    "Warning: DBC load incomplete; some data may be missing"
-                );
-                dbc
-            }
-            Err(_) => {
-                panic!("Unable to parse {dbc_file}");
+            Err(e) => {
+                panic!("Unable to parse {dbc_file}: {e:?}");
             }
         };
+        let derives =
+            if let Some(traits) = parse_attr(&input.attrs, "dbc_derive") {
+                traits
+                    .split(',')
+                    .filter_map(|t| syn::parse_str::<Path>(t).ok())
+                    .collect()
+            } else {
+                vec![]
+            };
 
         // gather all of the messages and associated attributes
         let mut messages: BTreeMap<String, MessageInfo<'_>> =
@@ -82,6 +95,7 @@ impl<'a> DeriveData<'a> {
             name: &input.ident,
             dbc,
             messages,
+            derives,
         })
     }
 
@@ -92,7 +106,7 @@ impl<'a> DeriveData<'a> {
         for (name, message) in &self.messages {
             let m = self
                 .dbc
-                .messages()
+                .messages
                 .get(message.index)
                 .unwrap_or_else(|| panic!("Unknown message {name}"));
 
@@ -101,8 +115,8 @@ impl<'a> DeriveData<'a> {
             let mut docs: Vec<String> = vec![];
             let mut infos: Vec<SignalInfo> = vec![];
             let mut values = TokenStream::new();
-            for s in m.signals() {
-                if !message.use_signal(s.name()) {
+            for s in &m.signals {
+                if !message.use_signal(&s.name) {
                     continue;
                 }
 
@@ -111,40 +125,38 @@ impl<'a> DeriveData<'a> {
                 types.push(signal.ntype.clone());
 
                 // documentation text
-                let endian_string =
-                    if s.byte_order() == &ByteOrder::LittleEndian {
-                        "little-endian"
-                    } else {
-                        "big-endian"
-                    };
+                let endian_string = if s.byte_order == ByteOrder::LittleEndian {
+                    "little-endian"
+                } else {
+                    "big-endian"
+                };
                 let scale_string = if signal.is_float() {
-                    &format!(", scale factor {}", s.factor())
+                    &format!(", scale factor {}", s.factor)
                 } else {
                     ""
                 };
                 let mut doc = format!(
                     "Wire format: {} bit{} starting at bit {}{} ({})\n",
-                    s.signal_size(),
-                    if s.signal_size() == &1 { "" } else { "s" },
-                    s.start_bit(),
+                    s.size,
+                    if s.size == 1 { "" } else { "s" },
+                    s.start_bit,
                     scale_string,
                     endian_string,
                 );
 
                 // value-table constants
-                if let Some(descs) = self
-                    .dbc
-                    .value_descriptions_for_signal(*m.message_id(), s.name())
+                if let Some(descs) =
+                    self.dbc.value_descriptions_for_signal(m.id, &s.name)
                 {
                     for desc in descs {
                         let santized: String =
-                            format!("{}_{}", s.name(), desc.b())
+                            format!("{}_{}", s.name, desc.description)
                                 .to_uppercase()
                                 .chars()
                                 .filter(|c| c.is_alphanumeric() || c == &'_')
                                 .collect();
                         let c = Ident::new(&santized, signal.ident.span());
-                        let i = signal.const_ident(*desc.a());
+                        let i = signal.const_ident(f64::from(desc.id as u32));
                         let v = quote! {#i};
                         let t = signal.ntype.clone();
                         values.extend(quote! {
@@ -161,7 +173,7 @@ impl<'a> DeriveData<'a> {
             let id = message.id;
             let extended = message.extended;
 
-            let dlc = *m.message_size() as usize;
+            let dlc = m.size as usize;
             let dlc8 = dlc as u8;
             let ident = message.ident;
 
@@ -198,6 +210,15 @@ impl<'a> DeriveData<'a> {
                 #[allow(non_snake_case)]
                 #[allow(non_camel_case_types)]
                 #[derive(Default)]
+            });
+
+            for t in &self.derives {
+                out.append_all(quote! {
+                    #[derive(#t)]
+                });
+            }
+
+            out.append_all(quote! {
                 #[doc = #doc]
                 pub struct #ident {
                     #(

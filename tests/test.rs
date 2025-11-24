@@ -6,6 +6,7 @@ mod test {
 
     #[derive(DbcData, Default)]
     #[dbc_file = "tests/test.dbc"]
+    #[dbc_derive = "Debug"]
     struct Test {
         aligned_le: AlignedLE,
         aligned_be: AlignedBE,
@@ -41,6 +42,16 @@ mod test {
     }
 
     #[test]
+    fn derives() {
+        let mut t = Test::default();
+        t.aligned_le.Signed8 = -3;
+        assert_eq!(
+            &format!("{:?}", t.aligned_le),
+            "AlignedLE { Unsigned32: 0, Unsigned16: 0, Unsigned8: 0, Signed8: -3 }"
+        );
+    }
+
+    #[test]
     fn cycle_time() {
         assert_eq!(MiscMessage::CYCLE_TIME, 100);
         assert_eq!(SixtyFourBitSigned::CYCLE_TIME, 2000);
@@ -48,8 +59,8 @@ mod test {
 
     #[test]
     fn value_table() {
-        assert_eq_float!(MiscMessage::FLOAT_A_PI, 3.14f32);
-        assert_eq_float!(MiscMessage::FLOAT_A_E, 2.718f32);
+        assert_eq_float!(MiscMessage::FLOAT_A_PI, 31415.0f32);
+        assert_eq_float!(MiscMessage::FLOAT_A_E, 27182.0f32);
         assert!(MiscMessage::BOOL_A_ON);
         assert!(!MiscMessage::BOOL_A_OFF);
     }
@@ -58,9 +69,10 @@ mod test {
     fn aligned_unsigned_le() {
         let mut t = Test::default();
 
-        assert!(t
-            .aligned_le
-            .decode(&[0xfe, 0x55, 0x01, 0x20, 0x34, 0x56, 0x78, 0x9A]));
+        assert!(
+            t.aligned_le
+                .decode(&[0xfe, 0x55, 0x01, 0x20, 0x34, 0x56, 0x78, 0x9A])
+        );
         assert_eq_hex!(t.aligned_le.Signed8, -2);
         assert_eq_hex!(t.aligned_le.Unsigned8, 0x55);
         assert_eq_hex!(t.aligned_le.Unsigned16, 0x2001);
@@ -81,9 +93,10 @@ mod test {
     fn aligned_unsigned_be() {
         let mut t = Test::default();
 
-        assert!(t
-            .aligned_be
-            .decode(&[0xAA, 0x55, 0x01, 0x20, 0x34, 0x56, 0x78, 0x9A]));
+        assert!(
+            t.aligned_be
+                .decode(&[0xAA, 0x55, 0x01, 0x20, 0x34, 0x56, 0x78, 0x9A])
+        );
         assert_eq_hex!(t.aligned_be.Signed8, -86);
         assert_eq_hex!(t.aligned_be.Unsigned8, 0x55);
         assert_eq_hex!(t.aligned_be.Unsigned16, 0x0120);
@@ -110,9 +123,10 @@ mod test {
         let mut t = Test::default();
 
         // various unaligned values
-        assert!(t
-            .unaligned_ule
-            .decode(&[0xF5, 0x71, 0x20, 0x31, 0xf0, 0xa1, 0x73, 0xfd]));
+        assert!(
+            t.unaligned_ule
+                .decode(&[0xF5, 0x71, 0x20, 0x31, 0xf0, 0xa1, 0x73, 0xfd])
+        );
         assert_eq_hex!(t.unaligned_ule.Unsigned15, 0x2E74);
         assert_eq_hex!(t.unaligned_ule.Unsigned23, 0x007C_0C48);
         assert_eq_hex!(t.unaligned_ule.Unsigned3, 6u8);
@@ -134,9 +148,10 @@ mod test {
         let mut t = Test::default();
 
         // various unaligned values
-        assert!(t
-            .unaligned_ube
-            .decode(&[0xfd, 0xe5, 0xa1, 0xf0, 0x31, 0xf8, 0x70, 0x77]));
+        assert!(
+            t.unaligned_ube
+                .decode(&[0xfd, 0xe5, 0xa1, 0xf0, 0x31, 0xf8, 0x70, 0x77])
+        );
         assert_eq_hex!(t.unaligned_ube.Unsigned3, 2u8);
         assert_eq_hex!(
             t.unaligned_ube.Unsigned15,
@@ -150,9 +165,10 @@ mod test {
         let mut t = Test::default();
 
         // various unaligned values
-        assert!(t
-            .unaligned_sle
-            .decode(&[0xF7, 0x70, 0x20, 0x31, 0xf0, 0xa1, 0x73, 0xfd]));
+        assert!(
+            t.unaligned_sle
+                .decode(&[0xF7, 0x70, 0x20, 0x31, 0xf0, 0xa1, 0x73, 0xfd])
+        );
         assert_eq_hex!(t.unaligned_sle.Signed15, 0x2E74);
         assert_eq_hex!(t.unaligned_sle.Signed23, 0xFFFC_0C48_u32 as i32);
         assert_eq!(t.unaligned_sle.Signed3, -2);
@@ -163,9 +179,10 @@ mod test {
         let mut t = Test::default();
 
         // various unaligned values
-        assert!(t
-            .unaligned_sbe
-            .decode(&[0xfd, 0xe5, 0xa1, 0xf0, 0x31, 0xf8, 0x70, 0x77]));
+        assert!(
+            t.unaligned_sbe
+                .decode(&[0xfd, 0xe5, 0xa1, 0xf0, 0x31, 0xf8, 0x70, 0x77])
+        );
         assert_eq_hex!(t.unaligned_sbe.Signed3, 2);
         assert_eq_hex!(t.unaligned_sbe.Signed15, 0xC383u16 as i16);
         assert_eq_hex!(t.unaligned_sbe.Signed23, 0x001F_031F);
@@ -194,23 +211,26 @@ mod test {
         let mut t = Test::default();
 
         // 64-bit unsigned little-endian
-        assert!(t
-            .sixty_four_le
-            .decode(&[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]));
+        assert!(
+            t.sixty_four_le
+                .decode(&[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88])
+        );
 
         assert_eq!(t.sixty_four_le.SixtyFour, 0x8877_6655_4433_2211);
 
         // 64-bit unsigned big-endian
-        assert!(t
-            .sixty_four_be
-            .decode(&[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]));
+        assert!(
+            t.sixty_four_be
+                .decode(&[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88])
+        );
 
         assert_eq_hex!(t.sixty_four_be.SixtyFour, 0x1122_3344_5566_7788);
 
         // 64-bit signed little-endian
-        assert!(t
-            .sixty_four_signed
-            .decode(&[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]));
+        assert!(
+            t.sixty_four_signed
+                .decode(&[0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88])
+        );
 
         assert_eq!(t.sixty_four_signed.SixtyFour, -8_613_303_245_920_329_199);
     }
@@ -225,8 +245,10 @@ mod test {
     #[test]
     fn grouped() {
         let mut t = Test::default();
-        assert!(t.grouped[0]
-            .decode(&[0xAA, 0x55, 0x01, 0x20, 0x34, 0x56, 0x78, 0x9A]));
+        assert!(
+            t.grouped[0]
+                .decode(&[0xAA, 0x55, 0x01, 0x20, 0x34, 0x56, 0x78, 0x9A])
+        );
         assert_eq_hex!(t.grouped[0].ValueA, 0x2001_55AA);
     }
 
@@ -250,13 +272,5 @@ mod test {
             MiscMessage,
         }
         assert_eq!(MiscMessage::ID, 8191);
-    }
-
-    #[test]
-    fn incomplete_dbc() {
-        #[allow(dead_code)]
-        #[derive(DbcData)]
-        #[dbc_file = "tests/incomplete.dbc"]
-        enum Messages {}
     }
 }

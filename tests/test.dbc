@@ -78,5 +78,5 @@ BA_ "GenMsgCycleTime" BO_ 8191 100;
 BA_ "GenMsgCycleTime" BO_ 66 2000;
 
 VAL_ 8191 Bool_A 1 "On" 0 "Off" ;
-VAL_ 8191 Float_A 3.14 "Pi" 2.718 "e" ;
+VAL_ 8191 Float_A 31415 "Pi" 27182 "e" ;
 VAL_ 1026 Unsigned15 33 "Thirty-three" 37 "Thirty-seven" 17283 "Test";
