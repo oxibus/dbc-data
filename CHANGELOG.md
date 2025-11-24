@@ -1,4 +1,10 @@
 # Changelog
+## [0.1.11](https://github.com/oxibus/dbc-data/compare/v0.1.10...v0.1.11) - 2025-11-24
+
+### Other
+
+- *(deps)* bump actions/checkout from 5 to 6 in the all-actions-version-updates group ([#13](https://github.com/oxibus/dbc-data/pull/13))
+
 ## [0.1.10](https://github.com/oxibus/dbc-data/compare/v0.1.9...v0.1.10) - 2025-11-24
 
 ### Fixed
