@@ -2,8 +2,12 @@
 ## [0.1.10](https://github.com/oxibus/dbc-data/compare/v0.1.9...v0.1.10) - 2025-11-24
 
 ### Fixed
-
 - encode uses shared ref, update default trait derives ([#11](https://github.com/oxibus/dbc-data/pull/11))
+
+## [0.1.9](https://github.com/oxibus/dbc-data/compare/v0.1.8...v0.1.9) - 2025-11-23
+* Update to can-dbc v8
+* Adds the ability to specify one or more trait derivations to the generated code.  This is useful for `Debug`, `defmt::Format`, etc.
+* Minor refactors and cleanups
 
 ## 0.1.8
 * Move repo to OxiBUS GitHub organization
