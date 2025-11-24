@@ -1,4 +1,10 @@
 # Changelog
+## [0.1.10](https://github.com/oxibus/dbc-data/compare/v0.1.9...v0.1.10) - 2025-11-24
+
+### Fixed
+
+- encode uses shared ref, update default trait derives ([#11](https://github.com/oxibus/dbc-data/pull/11))
+
 ## 0.1.8
 * Move repo to OxiBUS GitHub organization
 * License change to MIT or Apache 2.0
