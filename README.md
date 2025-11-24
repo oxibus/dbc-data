@@ -92,10 +92,11 @@ unsigned native types which are large enough to fit the contained
 values, e.g.  13-bit signals will be stored in a `u16` and 17-bit
 signals will be stored in a `u32`.
 
-## Additional `#[derive(..._]`s
+## Additional `#[derive(...)]`s
 To specify additional traits derived for the generated types, use
 the `#[dbc_derive(...)]` attribute with a comma-separated list of
-trait names.
+trait names.  The `Default`, `Copy`, and `Clone` traits are derived
+by default.
 
 ## Usage
 

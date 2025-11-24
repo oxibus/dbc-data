@@ -209,7 +209,7 @@ impl<'a> DeriveData<'a> {
                 #[automatically_derived]
                 #[allow(non_snake_case)]
                 #[allow(non_camel_case_types)]
-                #[derive(Default)]
+                #[derive(Default, Copy, Clone)]
             });
 
             for t in &self.derives {
@@ -243,7 +243,7 @@ impl<'a> DeriveData<'a> {
                         true
                     }
 
-                    pub fn encode(&mut self, pdu: &mut [u8])
+                    pub fn encode(&self, pdu: &mut [u8])
                                   -> bool {
                         if pdu.len() != #dlc {
                             return false
