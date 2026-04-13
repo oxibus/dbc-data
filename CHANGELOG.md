@@ -1,4 +1,14 @@
 # Changelog
+## [0.1.11](https://github.com/oxibus/dbc-data/compare/v0.1.10...v0.1.11) - 2026-04-13
+
+### Other
+
+- [pre-commit.ci] pre-commit autoupdate ([#15](https://github.com/oxibus/dbc-data/pull/15))
+- *(deps)* bump dependabot/fetch-metadata from 2 to 3 in the all-actions-version-updates group ([#18](https://github.com/oxibus/dbc-data/pull/18))
+- *(deps)* update can-dbc requirement from 8.0.0 to 9.0.0 in the all-cargo-version-updates group across 1 directory ([#16](https://github.com/oxibus/dbc-data/pull/16))
+- *(deps)* bump codecov/codecov-action from 5 to 6 in the all-actions-version-updates group ([#17](https://github.com/oxibus/dbc-data/pull/17))
+- *(deps)* bump actions/checkout from 5 to 6 in the all-actions-version-updates group ([#13](https://github.com/oxibus/dbc-data/pull/13))
+
 ## [0.1.10](https://github.com/oxibus/dbc-data/compare/v0.1.9...v0.1.10) - 2025-11-24
 
 ### Fixed
